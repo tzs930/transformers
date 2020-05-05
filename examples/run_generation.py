@@ -151,16 +151,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--model_type",
-        default=None,
+        default='gpt2',
         type=str,
-        required=True,
+        required=False,
         help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()),
     )
     parser.add_argument(
         "--model_name_or_path",
-        default=None,
+        default="outputs",
         type=str,
-        required=True,
+        required=False,
         help="Path to pre-trained model or shortcut name selected in the list: " + ", ".join(MODEL_CLASSES.keys()),
     )
 
@@ -185,7 +185,7 @@ def main():
 
     parser.add_argument("--seed", type=int, default=42, help="random seed for initialization")
     parser.add_argument("--no_cuda", action="store_true", help="Avoid using CUDA when available")
-    parser.add_argument("--num_return_sequences", type=int, default=1, help="The number of samples to generate.")
+    parser.add_argument("--num_return_sequences", type=int, default=5, help="The number of samples to generate.")
     args = parser.parse_args()
 
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
@@ -219,47 +219,49 @@ def main():
         )
     else:
         encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
-    encoded_prompt = encoded_prompt.to(args.device)
+    
+    while True:
+        encoded_prompt = encoded_prompt.to(args.device)
 
-    if encoded_prompt.size()[-1] == 0:
-        input_ids = None
-    else:
-        input_ids = encoded_prompt
+        if encoded_prompt.size()[-1] == 0:
+            input_ids = None
+        else:
+            input_ids = encoded_prompt
 
-    output_sequences = model.generate(
-        input_ids=input_ids,
-        max_length=args.length + len(encoded_prompt[0]),
-        temperature=args.temperature,
-        top_k=args.k,
-        top_p=args.p,
-        repetition_penalty=args.repetition_penalty,
-        do_sample=True,
-        num_return_sequences=args.num_return_sequences,
-    )
-
-    # Remove the batch dimension when returning multiple sequences
-    if len(output_sequences.shape) > 2:
-        output_sequences.squeeze_()
-
-    generated_sequences = []
-
-    for generated_sequence_idx, generated_sequence in enumerate(output_sequences):
-        print("=== GENERATED SEQUENCE {} ===".format(generated_sequence_idx + 1))
-        generated_sequence = generated_sequence.tolist()
-
-        # Decode text
-        text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
-
-        # Remove all text after the stop token
-        text = text[: text.find(args.stop_token) if args.stop_token else None]
-
-        # Add the prompt at the beginning of the sequence. Remove the excess text that was used for pre-processing
-        total_sequence = (
-            prompt_text + text[len(tokenizer.decode(encoded_prompt[0], clean_up_tokenization_spaces=True)) :]
+        output_sequences = model.generate(
+            input_ids=input_ids,
+            max_length=args.length + len(encoded_prompt[0]),
+            temperature=args.temperature,
+            top_k=args.k,
+            top_p=args.p,
+            repetition_penalty=args.repetition_penalty,
+            do_sample=True,
+            num_return_sequences=args.num_return_sequences,
         )
 
-        generated_sequences.append(total_sequence)
-        print(total_sequence)
+        # Remove the batch dimension when returning multiple sequences
+        if len(output_sequences.shape) > 2:
+            output_sequences.squeeze_()
+
+        generated_sequences = []
+
+        for generated_sequence_idx, generated_sequence in enumerate(output_sequences):
+            print("=== GENERATED SEQUENCE {} ===".format(generated_sequence_idx + 1))
+            generated_sequence = generated_sequence.tolist()
+
+            # Decode text
+            text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
+
+            # Remove all text after the stop token
+            text = text[: text.find(args.stop_token) if args.stop_token else None]
+
+            # Add the prompt at the beginning of the sequence. Remove the excess text that was used for pre-processing
+            total_sequence = (
+                prompt_text + text[len(tokenizer.decode(encoded_prompt[0], clean_up_tokenization_spaces=True)) :]
+            )
+
+            generated_sequences.append(total_sequence)
+            print(total_sequence)
 
     return generated_sequences
 

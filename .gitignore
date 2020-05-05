@@ -146,3 +146,11 @@ debug.env
 
 #ctags
 tags
+datasets
+examples/merged_pairs_eval.txt
+examples/merged_pairs_train.txt
+examples/outputs/
+examples/zork1_sapairs_maxdepth7.npy
+examples/zork1_sapairs_maxdepth7.txt
+examples/zork1_sapairs_maxdepth7_eval.txt
+examples/zork1_sapairs_maxdepth7_train.txt
