@@ -21,6 +21,7 @@ using a masked language modeling (MLM) loss.
 
 
 import logging
+import setGPU
 import math
 import os
 from dataclasses import dataclass, field
@@ -134,7 +135,7 @@ def main():
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     
     training_args.do_train = True
-    training_args.output_dir = 'outputs_all'
+    #training_args.output_dir = 'outputs_all'
 
     if data_args.eval_data_file is None and training_args.do_eval:
         raise ValueError(

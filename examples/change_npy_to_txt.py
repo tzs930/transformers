@@ -1,23 +1,29 @@
 import numpy as np
 
-loaded_arr = np.load('zork1_sapairs_maxdepth7.npy')
+loaded_arr = np.load('merged_pairs.npy')
 
-trainfile = open("zork1_sapairs_maxdepth7_train.txt","w")
-evalfile = open("zork1_sapairs_maxdepth7_eval.txt","w")
+trainfile = open("merged_pairs_train.txt","w")
+evalfile = open("merged_pairs_eval.txt","w")
 
 len_total = len(loaded_arr)
-idxs = np.arange(len_total)
-trainidxs = np.random.choice(idxs, size=int(len_total*0.8),replace=False)
+subsample_ratio = 0.4
+total_idxs = np.arange(len_total)
+subsample_idxs = np.random.choice(total_idxs, size=int(len_total * subsample_ratio), replace=False)
+subsample_arr = loaded_arr[subsample_idxs]
+
+len_subsample = len(subsample_arr)
+idxs = np.arange(len_subsample)
+trainidxs = np.random.choice(idxs, size=int(len_subsample*0.8),replace=False)
 evalidxs = np.delete(idxs, trainidxs)
 # testidxs = np.remove(idxs, trainidxs)
 # import IPython; IPython.embed()
 
-for elem in loaded_arr[trainidxs]:
+for elem in subsample_arr[trainidxs]:
     str1 = elem[0].replace('\n', ' ')
     str2 = "| [RESPONSE] " + elem[1] + '\n'
     trainfile.writelines(str1+str2)
     
-for elem in loaded_arr[evalidxs]:
+for elem in subsample_arr[evalidxs]:
     str1 = elem[0].replace('\n', ' ')
     str2 = "| [RESPONSE] " + elem[1] + '\n'
     evalfile.writelines(str1+str2)

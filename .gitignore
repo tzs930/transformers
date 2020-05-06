@@ -154,3 +154,6 @@ examples/zork1_sapairs_maxdepth7.npy
 examples/zork1_sapairs_maxdepth7.txt
 examples/zork1_sapairs_maxdepth7_eval.txt
 examples/zork1_sapairs_maxdepth7_train.txt
+examples/outputs_*
+*.out
+*.npy

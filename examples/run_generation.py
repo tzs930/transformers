@@ -17,7 +17,7 @@
 """ Conditional text generation with the auto-regressive models of the library (GPT/GPT-2/CTRL/Transformer-XL/XLNet)
 """
 
-
+import setGPU
 import argparse
 import logging
 
@@ -158,14 +158,14 @@ def main():
     )
     parser.add_argument(
         "--model_name_or_path",
-        default="outputs",
+        default="outputs_all",
         type=str,
         required=False,
         help="Path to pre-trained model or shortcut name selected in the list: " + ", ".join(MODEL_CLASSES.keys()),
     )
 
     parser.add_argument("--prompt", type=str, default="")
-    parser.add_argument("--length", type=int, default=20)
+    parser.add_argument("--length", type=int, default=10)
     parser.add_argument("--stop_token", type=str, default=None, help="Token at which text generation is stopped")
 
     parser.add_argument(
@@ -185,7 +185,7 @@ def main():
 
     parser.add_argument("--seed", type=int, default=42, help="random seed for initialization")
     parser.add_argument("--no_cuda", action="store_true", help="Avoid using CUDA when available")
-    parser.add_argument("--num_return_sequences", type=int, default=5, help="The number of samples to generate.")
+    parser.add_argument("--num_return_sequences", type=int, default=10, help="The number of samples to generate.")
     args = parser.parse_args()
 
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
@@ -197,6 +197,7 @@ def main():
     try:
         args.model_type = args.model_type.lower()
         model_class, tokenizer_class = MODEL_CLASSES[args.model_type]
+
     except KeyError:
         raise KeyError("the model {} you specified is not supported. You are welcome to add it and open a PR :)")
 
@@ -207,20 +208,19 @@ def main():
     args.length = adjust_length_to_model(args.length, max_sequence_length=model.config.max_position_embeddings)
     logger.info(args)
 
-    prompt_text = args.prompt if args.prompt else input("Model prompt >>> ")
-
-    # Different models need different input formatting and/or extra arguments
-    requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
-    if requires_preprocessing:
-        prepare_input = PREPROCESSING_FUNCTIONS.get(args.model_type)
-        preprocessed_prompt_text = prepare_input(args, model, tokenizer, prompt_text)
-        encoded_prompt = tokenizer.encode(
-            preprocessed_prompt_text, add_special_tokens=False, return_tensors="pt", add_space_before_punct_symbol=True
-        )
-    else:
-        encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
-    
     while True:
+        prompt_text = args.prompt if args.prompt else input("Model prompt >>> ")
+        # Different models need different input formatting and/or extra arguments
+        requires_preprocessing = args.model_type in PREPROCESSING_FUNCTIONS.keys()
+        if requires_preprocessing:
+          prepare_input = PREPROCESSING_FUNCTIONS.get(args.model_type)
+          preprocessed_prompt_text = prepare_input(args, model, tokenizer, prompt_text)
+          encoded_prompt = tokenizer.encode(
+              preprocessed_prompt_text, add_special_tokens=False, return_tensors="pt", add_space_before_punct_symbol=True
+          )
+        else:
+            encoded_prompt = tokenizer.encode(prompt_text, add_special_tokens=False, return_tensors="pt")
+    
         encoded_prompt = encoded_prompt.to(args.device)
 
         if encoded_prompt.size()[-1] == 0:
@@ -257,7 +257,7 @@ def main():
 
             # Add the prompt at the beginning of the sequence. Remove the excess text that was used for pre-processing
             total_sequence = (
-                prompt_text + text[len(tokenizer.decode(encoded_prompt[0], clean_up_tokenization_spaces=True)) :]
+                text[len(tokenizer.decode(encoded_prompt[0], clean_up_tokenization_spaces=True)) :]
             )
 
             generated_sequences.append(total_sequence)
